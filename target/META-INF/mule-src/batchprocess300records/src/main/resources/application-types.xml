@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="InputRecords" format="csv">
+      <types:shape format="weave" example="examples/InputRecords.csv"><![CDATA[%dw 2.0
+
+type InputRecords = Array<{|  ID: String,   AreaCode: String,   Year: String,   Count: String,   Population: String|}>
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+      </types:properties>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#3fdedbfb-a304-4964-8065-72c2e18bf6c0">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="InputRecords"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="InputRecords"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

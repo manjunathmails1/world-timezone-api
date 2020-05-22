@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<flow name="batchprocess300recordsFlow" doc:id="0e65cdfb-8f0b-4c31-8e8a-94b3957238f1" >
+		<scheduler doc:name="Scheduler" doc:id="19e7e2e1-6857-4531-b977-f31346abce80" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="5" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<file:read doc:name="Read" doc:id="f8767e83-e2c9-469d-a142-8f7d5faad859" path="V:\Mule\InputRecords\inputRcs.csv"/>
+		<ee:transform doc:name="Transform Message" doc:id="3fdedbfb-a304-4964-8065-72c2e18bf6c0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+
+	payload map (data, index) ->{
+		
+		ID: data.ID,
+		AreaCode: data.AreaCode,
+		Year: data.Year,
+		Count: data.Count,
+		Population:data.Population
+	}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="batchprocess300recordsBatch_Job" doc:id="8dc1f041-d086-4429-889b-f90c47db98b8" blockSize="10">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="18e04575-f449-4951-aa9d-ad241c64707c" >
+					<ee:transform doc:name="Transform Message" doc:id="cf452fd5-abcb-4d77-927c-172961b5bf4d" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	Id: payload.ID,
+	place: payload.AreaCode,
+	Population:payload.Population
+	
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="d17b0079-2d09-419b-80f6-bbaa70e8d956" size="10">
+						<ee:transform doc:name="Transform Message" doc:id="fbb22902-e6a4-4776-bcd0-095092e522aa" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	Places: payload map (data,index)->{
+		
+		
+		Id:data.Id,
+		Place:data.place,
+		Population:data.Population
+	}
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<file:write doc:name="Write" doc:id="e0f08430-d56e-4b82-9b6b-eed20909b1a1" path="#['MyFile' ++ (now() as String {format:'yyyy-MM-dd-hh-mm-ss'})++ (random() * 1000) ++ &quot;.txt&quot;]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="1bce2b88-eee5-40bb-ac4f-a06eca2e5fd0" message="Completed successfully"/>
+				<file:delete doc:name="Delete" doc:id="cfa27de0-6841-4cb2-9921-597d6431ea03" path="V:\Mule\InputRecords\inputRcs.csv"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>
